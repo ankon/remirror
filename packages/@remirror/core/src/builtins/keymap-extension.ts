@@ -24,14 +24,14 @@ export interface KeymapOptions {
    * Determines whether a backspace after an input rule has been applied should
    * reverse the effect of the input rule.
    *
-   * @defaultValue `true`
+   * @default `true`
    */
   undoInputRuleOnBackspace?: boolean;
 
   /**
    * Determines whether the escape key selects the current node.
    *
-   * @defaultValue `false`
+   * @default `false`
    */
   selectParentNodeOnEscape?: boolean;
 
@@ -245,7 +245,7 @@ declare global {
       /**
        * Whether to exclude the created keymap.
        *
-       * @defaultValue `undefined`
+       * @default `undefined`
        */
       keymap?: boolean;
     }

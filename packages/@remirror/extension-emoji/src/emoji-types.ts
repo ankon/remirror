@@ -1,9 +1,5 @@
-import type { CustomHandler, Handler } from '@remirror/core';
-import type {
-  SuggestChangeHandlerParameter,
-  SuggestExitHandlerParameter,
-  SuggestKeyBindingMap,
-} from '@remirror/pm/suggest';
+import type { Handler } from '@remirror/core';
+import type { SuggestChangeHandlerParameter } from '@remirror/pm/suggest';
 
 import type AliasData from './data/aliases';
 import type CategoryData from './data/categories';
@@ -23,10 +19,11 @@ export interface EmojiObject {
   skinVariations: boolean;
 }
 
-export interface EmojiSuggestionChangeHandlerParameter
-  extends SuggestChangeHandlerParameter<EmojiSuggestCommand> {
+export interface EmojiSuggestionChangeHandlerParameter extends SuggestChangeHandlerParameter {
   /**
    * The currently matching objects
+   *
+   * @deprecated This will be replaced with a new way of using emojis.
    */
   emojiMatches: EmojiObject[];
 }
@@ -34,11 +31,9 @@ export interface EmojiSuggestionChangeHandlerParameter
 export type SkinVariation = 0 | 1 | 2 | 3 | 4;
 
 export type EmojiSuggestCommand = (emoji: EmojiObject, skinVariation?: SkinVariation) => void;
-export type EmojiSuggestionKeyBindings = SuggestKeyBindingMap<EmojiSuggestCommand>;
 export type EmojiSuggestionChangeHandler = (
   parameter: EmojiSuggestionChangeHandlerParameter,
 ) => void;
-export type EmojiSuggestionExitHandler = (parameter: SuggestExitHandlerParameter) => void;
 
 export interface EmojiOptions {
   /**
@@ -53,25 +48,14 @@ export interface EmojiOptions {
   defaultEmoji?: NamesAndAliases[];
 
   /**
-   * Key bindings for suggesters.
-   */
-  keyBindings?: CustomHandler<EmojiSuggestionKeyBindings>;
-
-  /**
    * Called whenever the suggestion value is updated.
    */
   onChange?: Handler<EmojiSuggestionChangeHandler>;
 
   /**
-   * Called when the suggestion exits.
-   * This is useful for cleaning up local state when emoji is set.
-   */
-  onExit?: Handler<EmojiSuggestionExitHandler>;
-
-  /**
    * The maximum results to show when searching for matching emoji.
    *
-   * @defaultValue 15
+   * @default 15
    */
   maxResults?: number;
 }

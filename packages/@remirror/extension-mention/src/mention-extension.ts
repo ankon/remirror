@@ -1,6 +1,7 @@
+import type { Handler, ProsemirrorAttributes, Static } from '@remirror/core';
 import {
-  AddCustomHandler,
   ApplySchemaAttributes,
+  bool,
   CommandFunction,
   ErrorConstant,
   extensionDecorator,
@@ -9,42 +10,20 @@ import {
   getMatchString,
   invariant,
   isElementDomNode,
-  isMarkActive,
+  isPlainObject,
+  isString,
   MarkExtension,
   MarkExtensionSpec,
   markPasteRule,
-  noop,
   object,
+  pick,
   ProsemirrorPlugin,
   RangeParameter,
   removeMark,
   replaceText,
 } from '@remirror/core';
-import type { SuggestCharacterEntryMethod, Suggester } from '@remirror/pm/suggest';
-import {
-  escapeChar,
-  getRegexPrefix,
-  isInvalidSplitReason,
-  isRemovedReason,
-  isSelectionExitReason,
-  isSplitReason,
-  regexToString,
-} from '@remirror/pm/suggest';
-
-import type {
-  MentionCharacterEntryMethod,
-  MentionExtensionAttributes,
-  MentionExtensionSuggestCommand,
-  MentionKeyBinding,
-  MentionOptions,
-  SuggestionCommandAttributes,
-} from './mention-types';
-import {
-  DEFAULT_MATCHER,
-  getAppendText,
-  getMatcher,
-  isValidMentionAttributes,
-} from './mention-utils';
+import type { RangeWithCursor, SuggestChangeHandler, Suggester } from '@remirror/pm/suggest';
+import { createRegexFromSuggester, DEFAULT_SUGGESTER } from '@remirror/pm/suggest';
 
 /**
  * The mention extension wraps mentions as a prosemirror mark. It allows for
@@ -74,9 +53,8 @@ import {
     suggestTag: 'a' as const,
     noDecorations: false,
   },
-  handlerKeys: ['onChange', 'onExit'],
+  handlerKeys: ['onChange'],
   staticKeys: ['matchers', 'mentionTag'],
-  customHandlerKeys: ['keyBindings', 'onCharacterEntry'],
 })
 export class MentionExtension extends MarkExtension<MentionOptions> {
   get name() {
@@ -87,17 +65,6 @@ export class MentionExtension extends MarkExtension<MentionOptions> {
    * Tag this as a behavior influencing mark.
    */
   readonly tags = [ExtensionTag.Behavior];
-
-  private characterEntryMethods: Array<
-    SuggestCharacterEntryMethod<MentionExtensionSuggestCommand>
-  > = [];
-
-  private keyBindingsList: MentionKeyBinding[] = [];
-
-  /**
-   * The compiled keybindings.
-   */
-  private keyBindings: MentionKeyBinding = {};
 
   createMarkSpec(extra: ApplySchemaAttributes): MarkExtensionSpec {
     const dataAttributeId = 'data-mention-id';
@@ -115,19 +82,19 @@ export class MentionExtension extends MarkExtension<MentionOptions> {
       parseDOM: [
         {
           tag: `${this.options.mentionTag}[${dataAttributeId}]`,
-          getAttrs: (node) => {
-            if (!isElementDomNode(node)) {
+          getAttrs: (element) => {
+            if (!isElementDomNode(element)) {
               return false;
             }
 
-            const id = node.getAttribute(dataAttributeId);
-            const name = node.getAttribute(dataAttributeName);
-            const label = node.textContent;
-            return { ...extra.parse(node), id, label, name };
+            const id = element.getAttribute(dataAttributeId);
+            const name = element.getAttribute(dataAttributeName);
+            const label = element.textContent;
+            return { ...extra.parse(element), id, label, name };
           },
         },
       ],
-      toDOM: (node) => {
+      toDOM: (mark) => {
         const {
           label: _,
           id,
@@ -135,7 +102,7 @@ export class MentionExtension extends MarkExtension<MentionOptions> {
           replacementType,
           range,
           ...attributes
-        } = node.attrs as Required<MentionExtensionAttributes>;
+        } = mark.attrs as Required<MentionExtensionAttributes>;
         const matcher = this.options.matchers.find((matcher) => matcher.name === name);
 
         const mentionClassName = matcher
@@ -145,7 +112,7 @@ export class MentionExtension extends MarkExtension<MentionOptions> {
         return [
           this.options.mentionTag,
           {
-            ...extra.dom(node),
+            ...extra.dom(mark),
             ...attributes,
             class: name ? `${mentionClassName} ${mentionClassName}-${name}` : mentionClassName,
             [dataAttributeId]: id,
@@ -156,32 +123,6 @@ export class MentionExtension extends MarkExtension<MentionOptions> {
       },
     };
   }
-
-  protected onAddCustomHandler: AddCustomHandler<MentionOptions> = (parameter) => {
-    const { keyBindings, onCharacterEntry } = parameter;
-
-    if (keyBindings) {
-      this.keyBindingsList = [...this.keyBindingsList, keyBindings];
-      this.updateKeyBindings();
-
-      return () => {
-        this.keyBindingsList = this.keyBindingsList.filter((binding) => binding !== keyBindings);
-        this.updateKeyBindings();
-      };
-    }
-
-    if (onCharacterEntry) {
-      this.characterEntryMethods = [...this.characterEntryMethods, onCharacterEntry];
-
-      return () => {
-        this.characterEntryMethods = this.characterEntryMethods.filter(
-          (method) => method !== onCharacterEntry,
-        );
-      };
-    }
-
-    return;
-  };
 
   createCommands() {
     return {
@@ -205,13 +146,21 @@ export class MentionExtension extends MarkExtension<MentionOptions> {
 
   createPasteRules(): ProsemirrorPlugin[] {
     return this.options.matchers.map((matcher) => {
-      const { startOfLine, char, supportedCharacters, name } = {
+      const { startOfLine, char, supportedCharacters, name, matchOffset } = {
         ...DEFAULT_MATCHER,
         ...matcher,
       };
 
       const regexp = new RegExp(
-        `(${getRegexPrefix(startOfLine)}${escapeChar(char)}${regexToString(supportedCharacters)})`,
+        `(${
+          createRegexFromSuggester({
+            char,
+            matchOffset,
+            startOfLine,
+            supportedCharacters,
+            captureChar: true,
+          }).source
+        })`,
         'g',
       );
 
@@ -219,7 +168,7 @@ export class MentionExtension extends MarkExtension<MentionOptions> {
         regexp,
         type: this.type,
         getAttributes: (string) => ({
-          id: getMatchString(string.slice(char.length, string.length)),
+          id: getMatchString(string.slice(string[2].length, string.length)),
           label: getMatchString(string),
           name,
         }),
@@ -227,11 +176,8 @@ export class MentionExtension extends MarkExtension<MentionOptions> {
     });
   }
 
-  createSuggesters(): Array<Suggester<MentionExtensionSuggestCommand>> {
-    return this.options.matchers.map<Suggester<MentionExtensionSuggestCommand>>((matcher) => {
-      // eslint-disable-next-line @typescript-eslint/no-this-alias
-      const extension = this;
-
+  createSuggesters(): Suggester[] {
+    return this.options.matchers.map<Suggester>((matcher) => {
       return {
         ...DEFAULT_MATCHER,
         ...matcher,
@@ -240,74 +186,9 @@ export class MentionExtension extends MarkExtension<MentionOptions> {
         // prosemirror-suggest plugin always references the latest version of
         // the suggestion. This is not a good idea and should be fixed in a
         // better way soon.
-        get noDecorations() {
-          return extension.options.noDecorations;
-        },
-
-        get suggestTag() {
-          return extension.options.suggestTag;
-        },
-
-        keyBindings: () => this.keyBindings,
-        onCharacterEntry: this.onCharacterEntry,
+        noDecorations: this.options.noDecorations,
+        suggestTag: this.options.suggestTag,
         onChange: this.options.onChange,
-        onExit: this.options.onExit,
-
-        createCommand: ({ match, reason, setMarkRemoved }) => {
-          const { range, suggester } = match;
-          const { name } = suggester;
-          const createMention = this.store.getCommands().createMention;
-          const updateMention = this.store.getCommands().updateMention;
-          const removeMention = this.store.getCommands().removeMention;
-          const isActive = isMarkActive({
-            from: range.from,
-            to: range.end,
-            type: this.type,
-            trState: this.store.getState(),
-          });
-
-          const method = isActive ? updateMention : createMention;
-          const isSplit = isSplitReason(reason);
-          const isInvalid = isInvalidSplitReason(reason);
-          const isRemoved = isRemovedReason(reason);
-          const isSelectionExit = isSelectionExitReason(reason);
-
-          const remove = () => {
-            setMarkRemoved();
-
-            try {
-              // This might fail when a deletion has taken place.
-              isInvalid ? removeMention({ range }) : noop();
-            } catch {
-              // This sometimes fails and it's best to ignore until more is
-              // known about the impact. Please create an issue if this blocks
-              // you in some way.
-            }
-          };
-
-          const update = ({
-            replacementType = isSplit ? 'partial' : 'full',
-            id = match.queryText[replacementType],
-            label = match.matchText[replacementType],
-            appendText = this.options.appendText,
-            ...attributes
-          }: SuggestionCommandAttributes) => {
-            method({
-              id,
-              label,
-              appendText,
-              replacementType,
-              name,
-              range,
-              keepSelection: isSelectionExit,
-              ...attributes,
-            });
-          };
-
-          const command: MentionExtensionSuggestCommand = isInvalid || isRemoved ? remove : update;
-
-          return command;
-        },
       };
     });
   }
@@ -356,7 +237,7 @@ export class MentionExtension extends MarkExtension<MentionOptions> {
 
         if (shouldUpdate) {
           // Remove mark at previous position
-          let { oldFrom, oldTo } = { oldFrom: from, oldTo: range ? range.end : to };
+          let { oldFrom, oldTo } = { oldFrom: from, oldTo: range ? range.to : to };
           const $oldTo = tr.doc.resolve(oldTo);
 
           ({ from: oldFrom, to: oldTo } = getMarkRange($oldTo, this.type) || {
@@ -381,47 +262,200 @@ export class MentionExtension extends MarkExtension<MentionOptions> {
           type: this.type,
           attrs: { ...attributes, name },
           appendText: getAppendText(appendText, matcher.appendText),
-          range: range
-            ? { from, to: replacementType === 'full' ? range.end || to : to }
-            : undefined,
+          range: range ? { from, to: replacementType === 'full' ? range.to || to : to } : undefined,
           content: attributes.label,
         })(parameter);
       };
     };
   }
-
-  /**
-   * Create the `onCharacterEntry` method.
-   */
-  private readonly onCharacterEntry = (
-    parameter: Parameters<MentionCharacterEntryMethod>[0],
-  ): boolean => {
-    for (const method of this.characterEntryMethods) {
-      if (method(parameter)) {
-        return true;
-      }
-    }
-
-    return false;
-  };
-
-  /**
-   * For now a dumb merge for the key binding command. Later entries are given priority over earlier entries.
-   */
-  private updateKeyBindings() {
-    let newBindings: MentionKeyBinding = object();
-
-    for (const binding of this.keyBindingsList) {
-      newBindings = { ...newBindings, ...binding };
-    }
-
-    this.keyBindings = newBindings;
-  }
 }
+
+export interface OptionalMentionExtensionParameter {
+  /**
+   * The text to append to the replacement.
+   *
+   * @default ''
+   */
+  appendText?: string;
+
+  /**
+   * The range of the requested selection.
+   */
+  range?: RangeWithCursor;
+
+  /**
+   * Whether to replace the whole match (`full`) or just the part up until the
+   * cursor (`partial`).
+   */
+  replacementType: 'full' | 'partial';
+}
+
+/**
+ * The attrs that will be added to the node.
+ * ID and label are plucked and used while attributes like href and role can be assigned as desired.
+ */
+export type MentionExtensionAttributes = ProsemirrorAttributes<
+  OptionalMentionExtensionParameter & {
+    /**
+     * A unique identifier for the suggesters node
+     */
+    id: string;
+
+    /**
+     * The text to be placed within the suggesters node
+     */
+    label: string;
+
+    /**
+     * The identifying name for the matcher.
+     */
+    name: string;
+  }
+>;
+
+/**
+ * The options for the matchers which can be created by this extension.
+ */
+export interface MentionExtensionMatcher
+  extends Pick<
+    Suggester,
+    | 'char'
+    | 'name'
+    | 'startOfLine'
+    | 'supportedCharacters'
+    | 'validPrefixCharacters'
+    | 'invalidPrefixCharacters'
+    | 'matchOffset'
+    | 'suggestClassName'
+  > {
+  /**
+   * Provide customs class names for the completed mention
+   */
+  mentionClassName?: string;
+
+  /**
+   * Text to append after the suggestion has been added.
+   *
+   * @default ''
+   */
+  appendText?: string;
+}
+
+/**
+ * The static settings passed into a mention
+ */
+export interface MentionOptions {
+  /**
+   * Provide a custom tag for the mention
+   */
+  mentionTag?: Static<string>;
+
+  /**
+   * Provide the custom matchers that will be used to match mention text in the
+   * editor.
+   */
+  matchers: Static<MentionExtensionMatcher[]>;
+
+  /**
+   * Text to append after the mention has been added.
+   *
+   * **NOTE**: For some reason prosemirror seems to swallow up empty whitespace. You can get around this by using a non breaking space character '\u00A0'.
+   *
+   * ```ts
+   * import { NON_BREAKING_SPACE_CHAR } from '@remirror/core';
+   * ```
+   *
+   * @default ''
+   */
+  appendText?: string;
+  /**
+   * Tag for the prosemirror decoration which wraps an active match.
+   *
+   * @default 'span'
+   */
+  suggestTag?: string;
+
+  /**
+   * When true, decorations are not created when this mention is being edited..
+   */
+  noDecorations?: boolean;
+
+  /**
+   * Called whenever a suggestion becomes active or changes in any way.
+   *
+   * @remarks
+   *
+   * It receives a parameters object with the `reason` for the change for more
+   * granular control.
+   *
+   * @default `() => void`
+   */
+  onChange?: Handler<SuggestChangeHandler>;
+}
+
+/**
+ * The dynamic properties used to change the behavior of the mentions created.
+ */
+
+export type SuggestionCommandAttributes = ProsemirrorAttributes<
+  Partial<Pick<MentionExtensionAttributes, 'id' | 'label' | 'appendText' | 'replacementType'>> &
+    object
+>;
 
 interface CreateMentionParameter {
   /**
    * Whether the mention command should handle updates.
    */
   shouldUpdate: boolean;
+}
+
+/**
+ * The default matcher to use when none is provided in options
+ */
+const DEFAULT_MATCHER = {
+  ...pick(DEFAULT_SUGGESTER, [
+    'startOfLine',
+    'supportedCharacters',
+    'validPrefixCharacters',
+    'invalidPrefixCharacters',
+    'suggestClassName',
+  ]),
+  appendText: ' ',
+  matchOffset: 1,
+  mentionClassName: 'mention',
+};
+
+/**
+ * Check that the attributes exist and are valid for the mention update
+ * command method.
+ */
+function isValidMentionAttributes(attributes: unknown): attributes is MentionExtensionAttributes {
+  return bool(attributes && isPlainObject(attributes) && attributes.id && attributes.label);
+}
+
+/**
+ * Gets the matcher from the list of matchers if it exists.
+ *
+ * @param name - the name of the matcher to find
+ * @param matchers - the list of matchers to search through
+ */
+function getMatcher(name: string, matchers: MentionExtensionMatcher[]) {
+  const matcher = matchers.find((matcher) => matcher.name === name);
+  return matcher ? { ...DEFAULT_MATCHER, ...matcher } : undefined;
+}
+
+/**
+ * Get the append text value which needs to be handled carefully since it can
+ * also be an empty string.
+ */
+function getAppendText(preferred: string | undefined, fallback: string | undefined) {
+  if (isString(preferred)) {
+    return preferred;
+  }
+
+  if (isString(fallback)) {
+    return fallback;
+  }
+
+  return DEFAULT_MATCHER.appendText;
 }

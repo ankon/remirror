@@ -8,7 +8,7 @@ import { useExtension } from '@remirror/react';
 export function useEditorEvents<Key extends StringKey<GetHandler<EventsOptions>>>(
   event: Key,
   handler: GetHandler<EventsOptions>[Key],
-) {
+): void {
   useExtension(
     EventsExtension,
     ({ addHandler }) => {

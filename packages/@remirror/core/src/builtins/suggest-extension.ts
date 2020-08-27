@@ -108,15 +108,16 @@ declare global {
        * Whether to exclude the suggesters plugin configuration for the
        * extension.
        *
-       * @defaultValue `undefined`
+       * @default `undefined`
        */
       suggesters?: boolean;
     }
 
     interface ExtensionCreatorMethods {
       /**
-       * Create suggesters which respond to character key combinations within
-       * the editor instance.
+       * Create suggesters which respond to an activation `char` or regex
+       * pattern within the editor instance. The onChange handler provided is
+       * called with the data around the matching text.
        *
        * @remarks
        *

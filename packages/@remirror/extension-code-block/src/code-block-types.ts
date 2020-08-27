@@ -54,14 +54,14 @@ export interface CodeBlockOptions {
    *
    * By default refractor bundles the following languages: `markup`, `css`, `clike`, `js`
    *
-   * @defaultValue `[]`
+   * @default `[]`
    */
   supportedLanguages?: RefractorSyntax[];
 
   /**
    * A keyboard shortcut to trigger formatting the current block.
    *
-   * @defaultValue `Alt-Shift-F` (Mac) `Shift-Ctrl-F` (PC)
+   * @default `Alt-Shift-F` (Mac) `Shift-Ctrl-F` (PC)
    */
   keyboardShortcut?: string;
 
@@ -70,7 +70,7 @@ export interface CodeBlockOptions {
    *
    * It is a property so it can change during the editor's life.
    *
-   * @defaultValue 'markup'
+   * @default 'markup'
    */
   defaultLanguage?: string;
 
@@ -83,7 +83,7 @@ export interface CodeBlockOptions {
    * Set this to false if you want to manage the syntax styles by yourself.
    * For tips on how this could be accomplished see {@link https://prismjs.com}
    *
-   * @defaultValue 'atomDark'
+   * @default 'atomDark'
    */
   syntaxTheme?: LiteralUnion<SyntaxTheme, string>;
 
@@ -97,7 +97,7 @@ export interface CodeBlockOptions {
   /**
    * The name of the node that the code block should toggle back and forth from.
    *
-   * @defaultValue 'paragraph'
+   * @default 'paragraph'
    */
   toggleName?: string;
 }

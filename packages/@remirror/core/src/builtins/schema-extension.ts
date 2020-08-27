@@ -805,7 +805,7 @@ declare global {
        * Sometimes you need to add additional attributes to a node or mark. This
        * property enables this without needing to create a new extension.
        *
-       * @defaultValue `{}`
+       * @default `{}`
        */
       extraAttributes?: Static<SchemaAttributes>;
 
@@ -813,7 +813,7 @@ declare global {
        * When true will disable extra attributes for this instance of the
        * extension.
        *
-       * @defaultValue `undefined`
+       * @default `undefined`
        */
       disableExtraAttributes?: Static<boolean>;
     }
@@ -852,7 +852,7 @@ declare global {
        * Perhaps you don't need extra attributes at all in the editor. This
        * allows you to disable extra attributes when set to true.
        *
-       * @defaultValue undefined
+       * @default undefined
        */
       disableExtraAttributes?: boolean;
     }
@@ -906,7 +906,7 @@ declare global {
        * When true will disable extra attributes for all instances of this
        * extension.
        *
-       * @defaultValue `false`
+       * @default `false`
        */
       readonly disableExtraAttributes?: boolean;
     }

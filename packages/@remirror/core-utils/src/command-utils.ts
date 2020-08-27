@@ -26,7 +26,7 @@ interface UpdateMarkParameter extends Partial<RangeParameter>, Partial<Attribute
   /**
    * The text to append.
    *
-   * @defaultValue '''
+   * @default '''
    */
   appendText?: string;
 
@@ -44,17 +44,10 @@ export function updateMark(parameter: UpdateMarkParameter): CommandFunction {
     const { selection } = tr;
     const { from, to } = range ?? selection;
 
-    if (!dispatch) {
-      return true;
-    }
+    dispatch?.(
+      tr.addMark(from, to, type.create(attrs)) && appendText ? tr.insertText(appendText) : tr,
+    );
 
-    tr.addMark(from, to, type.create(attrs));
-
-    if (appendText) {
-      tr.insertText(appendText);
-    }
-
-    dispatch(tr);
     return true;
   };
 }
@@ -66,7 +59,7 @@ export function updateMark(parameter: UpdateMarkParameter): CommandFunction {
  * Adapted from
  * https://github.com/ProseMirror/prosemirror-commands/blob/3126d5c625953ba590c5d3a0db7f1009f46f1571/src/commands.js#L212-L221
  */
-export function lift({ tr, dispatch }: Pick<CommandFunctionParameter, 'tr' | 'dispatch'>) {
+export function lift({ tr, dispatch }: Pick<CommandFunctionParameter, 'tr' | 'dispatch'>): boolean {
   const { $from, $to } = tr.selection;
   const range = $from.blockRange($to);
   const target = range && liftTarget(range);
@@ -252,7 +245,7 @@ interface ReplaceTextParameter extends Partial<RangeParameter>, Partial<Attribut
   /**
    * The text to append.
    *
-   * @defaultValue '''
+   * @default '''
    */
   appendText?: string;
   /**
@@ -363,7 +356,7 @@ interface RemoveMarkParameter extends MarkTypeParameter, Partial<RangeParameter<
   /**
    * Whether to expand empty selections to the current mark range
    *
-   * @defaultValue `false`
+   * @default `false`
    */
   expand?: boolean;
 }

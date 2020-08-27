@@ -10,6 +10,7 @@ import {
   keys,
   range,
   take,
+  Value,
   values,
   within,
 } from '@remirror/core';
@@ -25,7 +26,9 @@ import type {
   SkinVariation,
 } from './emoji-types.js';
 
-/* Taken from https://github.com/tommoor/react-emoji-render/blob/bb67d5e344bb2b91a010461d84184052b1eb4212/data/asciiAliases.js  and emojiIndex.emoticons */
+/* Taken from
+https://github.com/tommoor/react-emoji-render/blob/bb67d5e344bb2b91a010461d84184052b1eb4212/data/asciiAliases.js
+and emojiIndex.emoticons */
 export const EMOTICONS: Record<string, string[]> = {
   angry: ['>:(', '>:-('],
   blush: [':")', ':-")'],
@@ -146,11 +149,11 @@ export function isValidEmojiObject(value: unknown): value is EmojiObject {
 /**
  * Convert an alias to the correct name.
  */
-export function aliasToName(name: AliasNames) {
+export function aliasToName(name: AliasNames): Value<typeof aliasObject> {
   return aliasObject[name];
 }
 
-export function getEmojiByName(name: string | undefined) {
+export function getEmojiByName(name: string | undefined): EmojiObject | undefined {
   return isEmojiName(name)
     ? emojiObject[name]
     : isEmojiAliasName(name)
@@ -163,7 +166,7 @@ export function getEmojiByName(name: string | undefined) {
  *
  * @param emoticon e.g. `:-)`
  */
-export function getEmojiFromEmoticon(emoticon: string) {
+export function getEmojiFromEmoticon(emoticon: string): EmojiObject | undefined {
   const emoticonName = Object.keys(EMOTICONS).find((name) => EMOTICONS[name].includes(emoticon));
   return getEmojiByName(emoticonName);
 }
@@ -171,7 +174,7 @@ export function getEmojiFromEmoticon(emoticon: string) {
 /**
  * Return a list of `maxResults` length of closest matches
  */
-export function sortEmojiMatches(query: string, maxResults = -1) {
+export function sortEmojiMatches(query: string, maxResults = -1): EmojiObject[] {
   const results = matchSorter(emojiList, query, {
     keys: ['name', (item) => item.description.replace(/\W/g, '')],
     threshold: matchSorter.rankings.CONTAINS,
@@ -201,7 +204,7 @@ export function populateFrequentlyUsed(names: NamesAndAliases[]): EmojiObject[] 
 /**
  * Return a string array of hexadecimals representing the hex code for an emoji
  */
-export function getHexadecimalsFromEmoji(emoji: string) {
+export function getHexadecimalsFromEmoji(emoji: string): string[] {
   return range(emoji.length / 2).map((index) => {
     const codePoint = emoji.codePointAt(index * 2);
     return codePoint ? codePoint.toString(16) : '';

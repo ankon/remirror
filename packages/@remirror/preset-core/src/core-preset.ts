@@ -28,7 +28,7 @@ export interface CorePresetOptions extends DocOptions, PositionerOptions, Histor
    * When using the `yjs` extension it is important to exclude the history
    * extension to prevent issues with collaborative editing mode.
    *
-   * @defaultValue `[]`
+   * @default `[]`
    */
   excludeExtensions?: Static<
     Array<'doc' | 'paragraph' | 'text' | 'positioner' | 'history' | 'gapCursor' | 'events'>

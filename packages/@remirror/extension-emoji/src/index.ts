@@ -8,8 +8,6 @@ export type {
   EmojiSuggestCommand,
   EmojiSuggestionChangeHandler,
   EmojiSuggestionChangeHandlerParameter,
-  EmojiSuggestionExitHandler,
-  EmojiSuggestionKeyBindings,
   Names,
   NamesAndAliases,
   SkinVariation,

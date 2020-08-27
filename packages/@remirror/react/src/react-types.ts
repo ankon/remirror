@@ -81,7 +81,7 @@ export interface BaseProps<Combined extends AnyCombinedUnion> extends EditorWrap
    * Determine whether the Prosemirror view is inserted at the `start` or `end`
    * of it's container DOM element.
    *
-   * @defaultValue 'end'
+   * @default 'end'
    */
   insertPosition?: 'start' | 'end';
 
@@ -119,7 +119,7 @@ export interface RefParameter<RefKey = 'ref'> {
    * A custom ref key which allows a reference to be obtained from non standard
    * components.
    *
-   * @defaultValue 'ref'
+   * @default 'ref'
    */
   refKey?: RefKey;
 }
@@ -150,14 +150,14 @@ export interface I18nContextProps {
   /**
    * The current locale for this context.
    *
-   * @defaultValue 'en'
+   * @default 'en'
    */
   locale: string;
 
   /**
    * Supported locales. Defaults to including the locale.
    *
-   * @defaultValue `[locale]`
+   * @default `[locale]`
    */
   supportedLocales?: string[];
 }

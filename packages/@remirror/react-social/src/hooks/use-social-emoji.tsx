@@ -40,7 +40,7 @@ export interface SocialEmojiState {
    * Whether the mention popup should show if available. This can be used to
    * hide the pop when the editor loses focus.
    *
-   * @defaultValue `true`
+   * @default `true`
    */
   show: boolean;
 }

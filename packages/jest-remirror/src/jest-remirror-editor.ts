@@ -134,7 +134,7 @@ export class RemirrorTestChain<Combined extends AnyCombinedUnion> {
   /**
    * The editor view.
    */
-  get view(): TestEditorView {
+  get view(): TestEditorView<SchemaFromCombined<Combined>> {
     return this.#manager.view as TestEditorView<SchemaFromCombined<Combined>>;
   }
 

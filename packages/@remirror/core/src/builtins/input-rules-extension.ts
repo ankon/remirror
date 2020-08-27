@@ -77,7 +77,7 @@ declare global {
       /**
        * Whether to use the inputRules for this particular extension.
        *
-       * @defaultValue `undefined`
+       * @default `undefined`
        */
       inputRules?: boolean;
     }

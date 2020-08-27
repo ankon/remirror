@@ -1,24 +1,16 @@
 import escapeStringRegex from 'escape-string-regexp';
 
-import type { AddCustomHandler, CommandFunction } from '@remirror/core';
+import type { CommandFunction, InputRule } from '@remirror/core';
 import {
-  ErrorConstant,
   extensionDecorator,
   FromToParameter,
-  invariant,
   object,
   PlainExtension,
   plainInputRule,
 } from '@remirror/core';
 import type { Suggester } from '@remirror/pm/suggest';
 
-import type {
-  EmojiObject,
-  EmojiOptions,
-  EmojiSuggestionKeyBindings,
-  NamesAndAliases,
-  SkinVariation,
-} from './emoji-types';
+import type { EmojiObject, EmojiOptions, NamesAndAliases, SkinVariation } from './emoji-types';
 import {
   DEFAULT_FREQUENTLY_USED,
   emoticonRegex,
@@ -35,8 +27,7 @@ import {
     suggestionCharacter: ':',
     maxResults: 20,
   },
-  handlerKeys: ['onChange', 'onExit'],
-  customHandlerKeys: ['keyBindings'],
+  handlerKeys: ['onChange'],
 })
 export class EmojiExtension extends PlainExtension<EmojiOptions> {
   /**
@@ -52,19 +43,9 @@ export class EmojiExtension extends PlainExtension<EmojiOptions> {
   private frequentlyUsed: EmojiObject[] = populateFrequentlyUsed(this.options.defaultEmoji);
 
   /**
-   * The custom keybindings added for the emoji plugin.
-   */
-  private keyBindingsList: EmojiSuggestionKeyBindings[] = [];
-
-  /**
-   * The compiled keybindings.
-   */
-  private keyBindings: EmojiSuggestionKeyBindings = {};
-
-  /**
    * Manage input rules for emoticons.
    */
-  createInputRules() {
+  createInputRules(): InputRule[] {
     return [
       // Emoticons
       plainInputRule({
@@ -164,35 +145,6 @@ export class EmojiExtension extends PlainExtension<EmojiOptions> {
     };
   }
 
-  protected onAddCustomHandler: AddCustomHandler<EmojiOptions> = (parameter) => {
-    const { keyBindings: keyBindings } = parameter;
-
-    if (!keyBindings) {
-      return;
-    }
-
-    this.keyBindingsList = [...this.keyBindingsList, keyBindings];
-    this.updateKeyBindings();
-
-    return () => {
-      this.keyBindingsList = this.keyBindingsList.filter((binding) => binding !== keyBindings);
-      this.updateKeyBindings();
-    };
-  };
-
-  /**
-   * For now a dumb merge for the key binding command. Later entries are given priority over earlier entries.
-   */
-  private updateKeyBindings() {
-    let newBindings: EmojiSuggestionKeyBindings = object();
-
-    for (const binding of this.keyBindingsList) {
-      newBindings = { ...newBindings, ...binding };
-    }
-
-    this.keyBindings = newBindings;
-  }
-
   /**
    * Emojis can be selected via `:` the colon key (by default). This sets the
    * configuration using `prosemirror-suggest`
@@ -205,31 +157,13 @@ export class EmojiExtension extends PlainExtension<EmojiOptions> {
       name: this.name,
       appendText: '',
       suggestTag: 'span',
-      keyBindings: () => this.keyBindings,
       onChange: (parameters) => {
-        const query = parameters.queryText.full;
+        const query = parameters.query.full;
         const emojiMatches =
           query.length === 0
             ? this.frequentlyUsed
             : sortEmojiMatches(query, this.options.maxResults);
         this.options.onChange({ ...parameters, emojiMatches });
-      },
-
-      onExit: this.options.onExit,
-      createCommand: (parameter) => {
-        const { match } = parameter;
-        const { getCommands } = this.store;
-        const create = getCommands().insertEmojiByObject;
-
-        return (emoji, skinVariation) => {
-          invariant(emoji, {
-            message: 'An emoji object is required when calling the emoji suggesters command',
-            code: ErrorConstant.EXTENSION,
-          });
-
-          const { from, end: to } = match.range;
-          create(emoji, { skinVariation, from, to });
-        };
       },
     };
   }

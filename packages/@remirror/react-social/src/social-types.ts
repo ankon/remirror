@@ -44,7 +44,7 @@ export interface SocialProviderProps<Combined extends AnyCombinedUnion = SocialC
   /**
    * The theme component used to render the `theme`.
    *
-   * @defaultValue 'div'
+   * @default 'div'
    */
   ThemeComponent?: ElementType;
 

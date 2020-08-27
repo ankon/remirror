@@ -42,7 +42,7 @@ export interface StateJSON {
   selection: FromToParameter;
 }
 
-type GetAttributesFunction = (p: string[] | string) => ProsemirrorAttributes | undefined;
+type GetAttributesFunction = (p: string[]) => ProsemirrorAttributes | undefined;
 
 /**
  * A function which takes a regex match array (strings) or a single string match
@@ -219,10 +219,13 @@ export type KeyBindingCommandFunction<Schema extends EditorSchema = EditorSchema
  * proceeding (lower priority) extension. The act of calling the `next` method
  * will prevent the default flow from executing.
  */
-export type KeyBindings<Schema extends EditorSchema = EditorSchema> = Record<
-  string,
-  KeyBindingCommandFunction<Schema>
->;
+export type KeyBindings<Schema extends EditorSchema = EditorSchema> = Partial<
+  Record<
+    'Enter' | 'ArrowDown' | 'ArrowUp' | 'ArrowLeft' | 'ArrowRight' | 'Esc' | 'Delete' | 'Backspace',
+    KeyBindingCommandFunction<Schema>
+  >
+> &
+  Record<string, KeyBindingCommandFunction<Schema>>;
 
 export type ProsemirrorKeyBindings<Schema extends EditorSchema = EditorSchema> = Record<
   string,

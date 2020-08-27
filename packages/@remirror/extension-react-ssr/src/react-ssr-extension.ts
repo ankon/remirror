@@ -19,7 +19,7 @@ export interface ReactSsrOptions {
    * The transformers that will be automatically used in the editor for properly
    * rendering ssr.
    *
-   * @defaultValue `DEFAULT_TRANSFORMATIONS`
+   * @default `DEFAULT_TRANSFORMATIONS`
    */
   transformers?: Static<SSRTransformer[]>;
 }
@@ -201,7 +201,7 @@ declare global {
       /**
        * Whether to use the SSR component when not in a DOM environment
        *
-       * @defaultValue `undefined`
+       * @default `undefined`
        */
       reactSSR?: boolean;
     }

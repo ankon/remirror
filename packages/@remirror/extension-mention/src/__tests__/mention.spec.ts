@@ -2,10 +2,9 @@ import { pmBuild } from 'jest-prosemirror';
 import { renderEditor } from 'jest-remirror';
 
 import { entries, fromHtml, GetHandler, toHtml } from '@remirror/core';
-import type { SuggestExitHandlerParameter } from '@remirror/pm/suggest';
 import { createCoreManager } from '@remirror/testing';
 
-import { MentionExtension, MentionExtensionSuggestCommand, MentionOptions } from '..';
+import { MentionExtension, MentionOptions } from '..';
 
 describe('schema', () => {
   const { schema } = createCoreManager([
