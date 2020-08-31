@@ -1,5 +1,14 @@
 # @remirror/core-types
 
+## 1.0.0-next.31
+
+> 2020-08-31
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @remirror/pm@1.0.0-next.31
+
 ## 1.0.0-next.28
 
 > 2020-08-27

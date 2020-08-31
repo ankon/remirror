@@ -1,5 +1,22 @@
 # @remirror/preset-core
 
+## 1.0.0-next.31
+
+> 2020-08-31
+
+### Patch Changes
+
+- Updated dependencies [[`1a7da61a`](https://github.com/remirror/remirror/commit/1a7da61a483358214f8f24e193d837b171dd4e1d)]:
+  - @remirror/core@1.0.0-next.31
+  - @remirror/extension-doc@1.0.0-next.31
+  - @remirror/extension-events@1.0.0-next.31
+  - @remirror/extension-gap-cursor@1.0.0-next.31
+  - @remirror/extension-history@1.0.0-next.31
+  - @remirror/extension-paragraph@1.0.0-next.31
+  - @remirror/extension-positioner@1.0.0-next.31
+  - @remirror/extension-text@1.0.0-next.31
+  - @remirror/pm@1.0.0-next.31
+
 ## 1.0.0-next.29
 
 > 2020-08-28

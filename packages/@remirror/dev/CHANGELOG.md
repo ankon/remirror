@@ -1,5 +1,15 @@
 # @remirror/dev
 
+## 1.0.0-next.31
+
+> 2020-08-31
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @remirror/react@1.0.0-next.31
+  - @remirror/pm@1.0.0-next.31
+
 ## 1.0.0-next.30
 
 > 2020-08-28
