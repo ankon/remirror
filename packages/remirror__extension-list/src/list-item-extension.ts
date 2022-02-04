@@ -110,7 +110,7 @@ export class ListItemExtension extends NodeExtension<ListItemOptions> {
    * Toggles the current list item.
    *
    * @param closed - the `closed` attribute. If it's a boolean value, then it
-   * will be set as an attribute. If it's undefined, then the `closed` attribuate
+   * will be set as an attribute. If it's undefined, then the `closed` attribute
    * will be toggled.
    */
   @command()

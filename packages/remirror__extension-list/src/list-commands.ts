@@ -371,7 +371,7 @@ function wrapItems({
 }): boolean {
   const oldList = range.parent;
 
-  // A slice that contianes all selected list items
+  // A slice that contains all selected list items
   const slice: Slice = tr.doc.slice(range.start, range.end);
 
   if (oldList.type === listType && slice.content.firstChild?.type === itemType) {
@@ -398,7 +398,7 @@ function wrapItems({
 }
 
 /**
- * Wraps existed list items to a new type of list, which only containes these list items.
+ * Wraps existing list items to a new type of list, which only contains these list items.
  *
  * @remarks
  *

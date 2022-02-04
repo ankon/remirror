@@ -356,7 +356,7 @@ describe('toggleCheckboxChecked', () => {
     expect(editor.view.state.doc).toEqualProsemirrorNode(to);
   });
 
-  it('toggles checkbox checked when the cursor is at the begining of a task list item', () => {
+  it('toggles checkbox checked when the cursor is at the beginning of a task list item', () => {
     const from = doc(
       taskList(
         unchecked(p('<cursor>hello')), //
