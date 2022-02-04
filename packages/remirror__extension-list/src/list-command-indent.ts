@@ -1,6 +1,7 @@
 import { CommandFunction, ProsemirrorNode } from '@remirror/pm';
 import { Fragment, NodeRange, ResolvedPos, Slice } from '@remirror/pm/model';
 import { TextSelection, Transaction } from '@remirror/pm/state';
+import { ReplaceAroundStep } from '@remirror/pm/transform';
 
 import { calculateItemRange } from './list-commands';
 import { isListItemNode, isListNode } from './list-utils';
@@ -98,6 +99,10 @@ function sliceSelectedItems(doc: ProsemirrorNode, $to: ResolvedPos, range: NodeR
  *
  * @beta
  */
+// Approach:
+// 1. Make a new node of the same type (through previousList.copy()), with empty content (<type>{}</type>) and create a slice from it
+// 2. Use ReplaceAroundStep for the range between the </listitem> of the previous list and the </listItem> of the last list with
+//    the slice, inserting the selected list items as items.
 export function indentList(tr: Transaction): boolean {
   const { $from, $to } = tr.selection;
   const range = calculateItemRange(tr.selection);
@@ -107,6 +112,7 @@ export function indentList(tr: Transaction): boolean {
   }
 
   const selectedList: ProsemirrorNode = tr.doc.resolve(range.start).node();
+  console.log(`selectedList: ${selectedList.toString()}`);
 
   if (!isListNode(selectedList)) {
     return false;
@@ -120,21 +126,41 @@ export function indentList(tr: Transaction): boolean {
 
   const { previousItem, previousList, previousItemStart } = findPreviousItemResult;
 
-  const { selectedSlice, unselectedSlice } = sliceSelectedItems(tr.doc, $to, range);
+  if (previousList.type === selectedList.type) {
+    // Swoosh things around
+    const newList = selectedList.copy();
+    const newListSlice = new Slice(Fragment.from(newList), 0, 0);
+    console.log(`newListSlice: ${newListSlice.toString()}`);
 
-  const newPreviousItemContent: Fragment = previousItem.content
-    .append(Fragment.fromArray([selectedList.copy(selectedSlice.content)]))
-    .append(unselectedSlice ? unselectedSlice.content : Fragment.empty);
+    tr.step(
+      new ReplaceAroundStep(
+        range.start - 1,
+        range.end - 1,
+        range.start,
+        range.end,
+        newListSlice,
+        1,
+      ),
+    );
+  } else {
+    // Reconstruct a suitable tree from copies
+    // FIXME: This "creates" content and thereby annotations will get removed as well.
+    const { selectedSlice, unselectedSlice } = sliceSelectedItems(tr.doc, $to, range);
+    const newPreviousItemContent: Fragment = previousItem.content
+      .append(Fragment.fromArray([selectedList.copy(selectedSlice.content)]))
+      .append(unselectedSlice ? unselectedSlice.content : Fragment.empty);
 
-  tr.deleteRange(range.start, range.end);
+    tr.deleteRange(range.start, range.end);
 
-  const previousItemEnd = previousItemStart + previousItem.nodeSize - 2; // Note: nodeSize = end - start + 2
-  const newPreviousItem = previousItem.copy(newPreviousItemContent);
+    const previousItemEnd = previousItemStart + previousItem.nodeSize - 2; // Note: nodeSize = end - start + 2
+    const newPreviousItem = previousItem.copy(newPreviousItemContent);
 
-  newPreviousItem.check();
+    newPreviousItem.check();
 
-  tr.replaceRangeWith(previousItemStart - 1, previousItemEnd + 1, newPreviousItem);
+    tr.replaceRangeWith(previousItemStart - 1, previousItemEnd + 1, newPreviousItem);
+  }
 
+  // FIXME: Is this check still needed?
   tr.setSelection(
     previousList === selectedList
       ? TextSelection.create(tr.doc, $from.pos, $to.pos)
